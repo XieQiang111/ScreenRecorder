@@ -2,11 +2,16 @@
 
 buildscript {
     repositories {
-        jcenter()
-        maven {
-            url 'https://maven.google.com/'
-            name 'Google'
-        }
+//        jcenter()
+//        maven {
+//            url 'https://maven.google.com/'
+//            name 'Google'
+//        }
+
+        // 使用阿里云镜像
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/jcenter' }
+        maven { url 'https://maven.aliyun.com/nexus/content/groups/public' }
     }
     dependencies {
         classpath 'com.android.tools.build:gradle:3.1.3'
@@ -15,10 +20,13 @@ buildscript {
 
 allprojects {
     repositories {
-        jcenter()
-        maven {
-            url 'https://maven.google.com/'
-            name 'Google'
-        }
+//        jcenter()
+//        maven {
+//            url 'https://maven.google.com/'
+//            name 'Google'
+//        }
+
+        maven { url 'https://maven.aliyun.com/repository/google' }
+        maven { url 'https://maven.aliyun.com/repository/jcenter' }
     }
 }
