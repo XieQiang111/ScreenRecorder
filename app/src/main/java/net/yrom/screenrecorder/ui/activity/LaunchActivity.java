@@ -1,12 +1,19 @@
 package net.yrom.screenrecorder.ui.activity;
 
 import android.Manifest;
+import android.app.Activity;
+import android.content.Context;
+import android.content.Intent;
 import android.content.pm.PackageManager;
+import android.net.Uri;
+import android.os.Build;
 import android.os.Bundle;
+import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
 import android.view.View;
 import android.widget.Button;
+import android.widget.Toast;
 
 import net.yrom.screenrecorder.R;
 
@@ -21,11 +28,13 @@ public class LaunchActivity extends AppCompatActivity {
     @BindView(R.id.btn_camera_record)
     Button btnCameraRecord;
 
+    private static final int REQUEST_OVERLAY_PERMISSION = 2;
     private static final int REQUEST_STREAM = 1;
     private static String[] PERMISSIONS_STREAM = {
             Manifest.permission.CAMERA,
             Manifest.permission.RECORD_AUDIO,
-            Manifest.permission.WRITE_EXTERNAL_STORAGE
+            Manifest.permission.WRITE_EXTERNAL_STORAGE,
+            Manifest.permission.SYSTEM_ALERT_WINDOW
     };
 
     boolean authorized = false;
@@ -66,6 +75,14 @@ public class LaunchActivity extends AppCompatActivity {
         } else {
             authorized = true;
         }
+
+        // 在Activity或Service中调用
+        if (!canDrawOverlays(this)) {
+            requestOverlayPermission(LaunchActivity.this, REQUEST_OVERLAY_PERMISSION);
+        } else {
+            // 已有权限，显示悬浮窗
+//            MyWindowManager.createSmallWindow();
+        }
     }
 
     @Override
@@ -76,6 +93,40 @@ public class LaunchActivity extends AppCompatActivity {
                     grantResults[1] == PackageManager.PERMISSION_GRANTED &&
                     grantResults[2] == PackageManager.PERMISSION_GRANTED) {
                 authorized = true;
+            }
+        }
+    }
+
+
+    // 检查悬浮窗权限
+    public static boolean canDrawOverlays(Context context) {
+        if (Build.VERSION.SDK_INT < Build.VERSION_CODES.M) {
+            return true; // 6.0以下无需权限
+        }
+        return Settings.canDrawOverlays(context);
+    }
+
+    // 请求权限的方法
+    public static void requestOverlayPermission(Activity activity, int requestCode) {
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M) {
+            Intent intent = new Intent(Settings.ACTION_MANAGE_OVERLAY_PERMISSION,
+                    Uri.parse("package:" + activity.getPackageName()));
+            activity.startActivityForResult(intent, requestCode);
+        }
+    }
+
+    @Override
+    protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+        super.onActivityResult(requestCode, resultCode, data);
+        if (requestCode == REQUEST_OVERLAY_PERMISSION) {
+            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
+                    && Settings.canDrawOverlays(this)) {
+                // 用户已授权，显示悬浮窗
+//                MyWindowManager.createSmallWindow();
+
+                int a = 0;
+            } else {
+                Toast.makeText(this, "悬浮窗权限被拒绝", Toast.LENGTH_SHORT).show();
             }
         }
     }

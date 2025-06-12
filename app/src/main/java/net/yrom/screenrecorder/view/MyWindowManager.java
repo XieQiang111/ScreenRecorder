@@ -2,6 +2,7 @@ package net.yrom.screenrecorder.view;
 
 import android.content.Context;
 import android.graphics.PixelFormat;
+import android.os.Build;
 import android.view.Gravity;
 import android.view.View;
 import android.view.WindowManager;
@@ -61,7 +62,13 @@ public class MyWindowManager {
             smallWindow = new ScreenFloatingWindow(context);
             if (smallWindowParams == null) {
                 smallWindowParams = new LayoutParams();
-                smallWindowParams.type = LayoutParams.TYPE_PHONE;
+                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
+                    // Android 8.0+ 必须使用 TYPE_APPLICATION_OVERLAY
+                    smallWindowParams.type = WindowManager.LayoutParams.TYPE_APPLICATION_OVERLAY;
+                } else {
+                    smallWindowParams.type = WindowManager.LayoutParams.TYPE_PHONE;
+                }
+
                 smallWindowParams.format = PixelFormat.RGBA_8888;
                 smallWindowParams.flags = LayoutParams.FLAG_NOT_TOUCH_MODAL
                         | LayoutParams.FLAG_NOT_FOCUSABLE;
