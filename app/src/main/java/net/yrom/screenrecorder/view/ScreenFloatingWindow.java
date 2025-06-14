@@ -1,10 +1,12 @@
 package net.yrom.screenrecorder.view;
 
 import android.content.Context;
+import android.graphics.SurfaceTexture;
 import android.os.Handler;
 import android.os.Looper;
 import android.view.LayoutInflater;
 import android.view.MotionEvent;
+import android.view.TextureView;
 import android.view.View;
 import android.view.ViewGroup;
 import android.view.WindowManager;
@@ -99,15 +101,22 @@ public class ScreenFloatingWindow extends FrameLayout implements IScreenRecordFl
 
     private RelativeLayout rlMenu;
 
-    private DanmakuListView danmakuLV;
+//    private DanmakuListView danmakuLV;
 
     private OnFloatingWindowItemClickListener itemClickListener;
 
-    private DanmakuListAdapter listAdapter;
+//    private DanmakuListAdapter listAdapter;
+
+    private TextureView previewView;
 
     private boolean isDanmakuOn = true;
     private boolean isMicOn = true;
     private boolean isDanmakuVisible = true;
+
+
+    public TextureView getPreviewView() {
+        return previewView;
+    }
 
     public ScreenFloatingWindow(Context context) {
         super(context);
@@ -116,8 +125,8 @@ public class ScreenFloatingWindow extends FrameLayout implements IScreenRecordFl
     }
 
     private void initData(Context context) {
-        listAdapter = new DanmakuListAdapter();
-        danmakuLV.setAdapter(listAdapter);
+//        listAdapter = new DanmakuListAdapter();
+//        danmakuLV.setAdapter(listAdapter);
     }
 
     private void initView(Context context) {
@@ -131,14 +140,48 @@ public class ScreenFloatingWindow extends FrameLayout implements IScreenRecordFl
         micView = (ImageView) findViewById(R.id.iv_mic);
         changeButtonView = (ImageView) findViewById(R.id.iv_other);
         floatingSwichView = (ImageView) findViewById(R.id.iv_close);
-        danmakuLV = (DanmakuListView) findViewById(R.id.lv_danmaku);
+//        danmakuLV = (DanmakuListView) findViewById(R.id.lv_danmaku);
         viewWidth = floatingWindowView.getLayoutParams().width;
         viewHeight = floatingWindowView.getLayoutParams().height;
+
+        previewView = (TextureView) findViewById(R.id.preview_view);
 
         danmakuView.setOnClickListener(this);
         micView.setOnClickListener(this);
         changeButtonView.setOnClickListener(this);
         floatingSwichView.setOnClickListener(this);
+
+        previewView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
+            @Override
+            public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
+                // ✅ 此时 SurfaceTexture 已就绪，可安全使用
+
+                SurfaceTexture texture = previewView.getSurfaceTexture();
+
+                if(surface == texture)
+                {
+                    int a = 0;
+                }
+            }
+
+            @Override
+            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
+
+            }
+
+            @Override
+            public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
+                // ✅ 释放资源（如 MediaPlayer、Camera）
+                return true; // 返回 true 让系统自动释放 SurfaceTexture
+            }
+
+            @Override
+            public void onSurfaceTextureUpdated(SurfaceTexture surface) {
+
+            }
+
+            // ... 其他回调略
+        });
     }
 
     @Override
@@ -332,15 +375,15 @@ public class ScreenFloatingWindow extends FrameLayout implements IScreenRecordFl
         }
     }
 
-    public void setDataToList(final List<DanmakuBean> danmakuList) {
-        if (listAdapter != null) {
-            new Handler(Looper.getMainLooper()).post(new Runnable() {
-                @Override
-                public void run() {
-                    listAdapter.setDataToAdapter(danmakuList);
-                }
-            });
-        }
-    }
+//    public void setDataToList(final List<DanmakuBean> danmakuList) {
+//        if (listAdapter != null) {
+//            new Handler(Looper.getMainLooper()).post(new Runnable() {
+//                @Override
+//                public void run() {
+//                    listAdapter.setDataToAdapter(danmakuList);
+//                }
+//            });
+//        }
+//    }
 
 }

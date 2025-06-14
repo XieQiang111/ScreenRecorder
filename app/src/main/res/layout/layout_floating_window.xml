@@ -74,14 +74,23 @@
             android:orientation="vertical"
             android:visibility="visible">
 
-            <net.yrom.screenrecorder.view.DanmakuListView
-                android:id="@+id/lv_danmaku"
-                android:layout_width="150dp"
-                android:layout_height="120dp"
+<!--            <net.yrom.screenrecorder.view.DanmakuListView-->
+<!--                android:id="@+id/lv_danmaku"-->
+<!--                android:layout_width="150dp"-->
+<!--                android:layout_height="120dp"-->
+<!--                android:layout_marginBottom="5dp"-->
+<!--                android:layout_marginTop="5dp"-->
+<!--                android:divider="#ffffff"-->
+<!--                android:dividerHeight="0.5dp" />-->
+
+            <TextureView
+                android:id="@+id/preview_view"
+                android:layout_width="320dp"
+                android:layout_height="180dp"
                 android:layout_marginBottom="5dp"
                 android:layout_marginTop="5dp"
                 android:divider="#ffffff"
-                android:dividerHeight="0.5dp" />
+                android:dividerHeight="0.5dp"/>
 
         </LinearLayout>
     </RelativeLayout>

@@ -8,6 +8,7 @@ import android.content.pm.PackageManager;
 import android.net.Uri;
 import android.os.Build;
 import android.os.Bundle;
+import android.os.Handler;
 import android.provider.Settings;
 import android.support.v4.app.ActivityCompat;
 import android.support.v7.app.AppCompatActivity;
@@ -16,6 +17,7 @@ import android.widget.Button;
 import android.widget.Toast;
 
 import net.yrom.screenrecorder.R;
+import net.yrom.screenrecorder.view.MyWindowManager;
 
 import butterknife.BindView;
 import butterknife.ButterKnife;
@@ -38,6 +40,8 @@ public class LaunchActivity extends AppCompatActivity {
     };
 
     boolean authorized = false;
+
+    private Handler handler = new Handler();
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -76,12 +80,21 @@ public class LaunchActivity extends AppCompatActivity {
             authorized = true;
         }
 
-        // 在Activity或Service中调用
+        // 开启悬浮窗权限
         if (!canDrawOverlays(this)) {
             requestOverlayPermission(LaunchActivity.this, REQUEST_OVERLAY_PERMISSION);
-        } else {
-            // 已有权限，显示悬浮窗
-//            MyWindowManager.createSmallWindow();
+        }
+
+        if (canDrawOverlays(this)) {
+            handler.post(new Runnable() {
+                @Override
+                public void run() {
+                    // 当前界面是桌面，且没有悬浮窗显示，则创建悬浮窗。
+                    if (!MyWindowManager.isWindowShowing()) {
+                        MyWindowManager.createSmallWindow(getApplicationContext());
+                    }
+                }
+            });
         }
     }
 
@@ -121,10 +134,7 @@ public class LaunchActivity extends AppCompatActivity {
         if (requestCode == REQUEST_OVERLAY_PERMISSION) {
             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.M
                     && Settings.canDrawOverlays(this)) {
-                // 用户已授权，显示悬浮窗
-//                MyWindowManager.createSmallWindow();
 
-                int a = 0;
             } else {
                 Toast.makeText(this, "悬浮窗权限被拒绝", Toast.LENGTH_SHORT).show();
             }

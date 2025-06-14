@@ -16,12 +16,23 @@
 
 package net.yrom.screenrecorder.task;
 
+import android.graphics.Bitmap;
+import android.graphics.BitmapFactory;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.ImageFormat;
+import android.graphics.Rect;
+import android.graphics.SurfaceTexture;
 import android.hardware.display.DisplayManager;
 import android.hardware.display.VirtualDisplay;
+import android.media.Image;
+import android.media.ImageReader;
 import android.media.MediaCodec;
 import android.media.MediaCodecInfo;
 import android.media.MediaFormat;
 import android.media.projection.MediaProjection;
+import android.os.Handler;
+import android.util.DisplayMetrics;
 import android.util.Log;
 import android.view.Surface;
 
@@ -29,6 +40,7 @@ import net.yrom.screenrecorder.core.Packager;
 import net.yrom.screenrecorder.rtmp.RESFlvData;
 import net.yrom.screenrecorder.rtmp.RESFlvDataCollecter;
 import net.yrom.screenrecorder.tools.LogTools;
+import net.yrom.screenrecorder.ui.activity.ScreenRecordActivity;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -62,6 +74,9 @@ public class ScreenRecorder extends Thread {
     private VirtualDisplay mVirtualDisplay;
     private RESFlvDataCollecter mDataCollecter;
 
+    private ImageReader mImageReader;
+    private ScreenRecordActivity mActivity;
+
     public ScreenRecorder(RESFlvDataCollecter dataCollecter, int width, int height, int bitrate, int dpi, MediaProjection mp) {
         super(TAG);
         mWidth = width;
@@ -71,6 +86,10 @@ public class ScreenRecorder extends Thread {
         mMediaProjection = mp;
         startTime = 0;
         mDataCollecter = dataCollecter;
+//        mActivity = activity;
+//        if (surfaceTexture != null) {
+//            mSurface = new Surface(surfaceTexture);
+//        }
     }
 
     /**
@@ -88,9 +107,15 @@ public class ScreenRecorder extends Thread {
             } catch (IOException e) {
                 throw new RuntimeException(e);
             }
+
+            // 创建ImageReader用于获取帧
+//            mImageReader = ImageReader.newInstance(mWidth, mHeight, ImageFormat.JPEG, 2);
+//            mImageReader.setOnImageAvailableListener(imageListener, new Handler());
+
             mVirtualDisplay = mMediaProjection.createVirtualDisplay(TAG + "-display",
                     mWidth, mHeight, mDpi, DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC,
                     mSurface, null, null);
+
             Log.d(TAG, "created virtual display: " + mVirtualDisplay);
             recordVirtualDisplay();
         } catch (Exception e) {
@@ -118,13 +143,14 @@ public class ScreenRecorder extends Thread {
 
     private void recordVirtualDisplay() {
         while (!mQuit.get()) {
+//            int format = mEncoder.getInputFormat().getInteger(MediaFormat.KEY_COLOR_FORMAT);
             int eobIndex = mEncoder.dequeueOutputBuffer(mBufferInfo, TIMEOUT_US);
             switch (eobIndex) {
                 case MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED:
                     LogTools.d("VideoSenderThread,MediaCodec.INFO_OUTPUT_BUFFERS_CHANGED");
                     break;
                 case MediaCodec.INFO_TRY_AGAIN_LATER:
-//                    LogTools.d("VideoSenderThread,MediaCodec.INFO_TRY_AGAIN_LATER");
+                    LogTools.d("VideoSenderThread,MediaCodec.INFO_TRY_AGAIN_LATER");
                     break;
                 case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
                     LogTools.d("VideoSenderThread,MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:" +
@@ -142,6 +168,7 @@ public class ScreenRecorder extends Thread {
                      */
                     if (mBufferInfo.flags != MediaCodec.BUFFER_FLAG_CODEC_CONFIG && mBufferInfo.size != 0) {
                         ByteBuffer realData = mEncoder.getOutputBuffers()[eobIndex];
+
                         realData.position(mBufferInfo.offset + 4);
                         realData.limit(mBufferInfo.offset + mBufferInfo.size);
                         sendRealData((mBufferInfo.presentationTimeUs / 1000) - startTime, realData);
@@ -220,4 +247,66 @@ public class ScreenRecorder extends Thread {
         resFlvData.videoFrameType = frameType;
         mDataCollecter.collect(resFlvData, FLV_RTMP_PACKET_TYPE_VIDEO);
     }
+
+
+//    private final ImageReader.OnImageAvailableListener imageListener =
+//            new ImageReader.OnImageAvailableListener() {
+//                @Override
+//                public void onImageAvailable(ImageReader reader) {
+////                    synchronized (mFrameLock) {
+//                    try (Image image = reader.acquireLatestImage()) {
+//                        if (image == null) return;
+//
+//                        // 获取原始帧数据
+//                        Image.Plane[] planes = image.getPlanes();
+//                        ByteBuffer buffer = planes[0].getBuffer();
+//                        byte[] bytes = new byte[buffer.remaining()];
+//                        buffer.get(bytes);
+//
+//                        // 解码为Bitmap并重采样
+//                        Bitmap originalBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
+//                        if (originalBitmap == null) {
+//                            Log.e(TAG, "Failed to decode byte array into bitmap.");
+//                            return;
+//                        }
+//
+//                        // 重采样到目标尺寸
+//                        Bitmap scaledBitmap = Bitmap.createScaledBitmap(
+//                                originalBitmap, 320, 180, true
+//                        );
+//                        originalBitmap.recycle();
+//
+//                        // 使用Canvas在Surface上绘制
+//                        Canvas canvas = mSurface.lockCanvas(null);
+//                        if (canvas != null) {
+//                            try {
+//                                // 清除画布
+//                                canvas.drawColor(Color.BLACK);
+//
+//                                // 计算居中位置
+//                                int canvasWidth = canvas.getWidth();
+//                                int canvasHeight = canvas.getHeight();
+//                                int left = (canvasWidth - 320) / 2;
+//                                int top = (canvasHeight - 180) / 2;
+//
+//                                // 绘制到Surface
+//                                canvas.drawBitmap(
+//                                        scaledBitmap,
+//                                        null,
+//                                        new Rect(left, top, left + 320, top + 180),
+//                                        null
+//                                );
+//                            } finally {
+//                                // 确保解锁画布
+//                                mSurface.unlockCanvasAndPost(canvas);
+//                            }
+//                        }
+//                        scaledBitmap.recycle();
+//                    } catch (Exception e) {
+//                        Log.e(TAG, "Error processing image: " + e.getMessage());
+//                    }
+//                }
+////                }
+//            };
+
 }

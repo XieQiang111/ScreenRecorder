@@ -9,7 +9,6 @@ import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.support.v4.app.NotificationCompat;
-import android.util.Log;
 
 import net.yrom.screenrecorder.IScreenRecorderAidlInterface;
 import net.yrom.screenrecorder.ui.activity.ScreenRecordActivity;
@@ -27,11 +26,13 @@ public class ScreenRecordListenerService extends Service {
 
     private static final String TAG = ScreenRecordListenerService.class.getSimpleName();
 
+
     public static final int PENDING_REQUEST_CODE = 0x01;
     private static final int NOTIFICATION_ID = 3;
     private NotificationManager mNotificationManager;
     private NotificationCompat.Builder builder;
     private Handler handler = new Handler();
+
 
     @Override
     public void onCreate() {
@@ -46,15 +47,6 @@ public class ScreenRecordListenerService extends Service {
 
     @Override
     public int onStartCommand(Intent intent, int flags, int startId) {
-        // 当前界面是桌面，且没有悬浮窗显示，则创建悬浮窗。
-        if (!MyWindowManager.isWindowShowing()) {
-            handler.post(new Runnable() {
-                @Override
-                public void run() {
-                    MyWindowManager.createSmallWindow(getApplicationContext());
-                }
-            });
-        }
         return super.onStartCommand(intent, flags, startId);
     }
 
@@ -86,10 +78,10 @@ public class ScreenRecordListenerService extends Service {
 
         @Override
         public void sendDanmaku(List<DanmakuBean> danmakuBean) throws RemoteException {
-            Log.e(TAG, "danmaku msg = " + danmakuBean.get(0).getMessage());
-            if (MyWindowManager.isWindowShowing()) {
-                MyWindowManager.getSmallWindow().setDataToList(danmakuBean);
-            }
+//            Log.e(TAG, "danmaku msg = " + danmakuBean.get(0).getMessage());
+//            if (MyWindowManager.isWindowShowing()) {
+//                MyWindowManager.getSmallWindow().setDataToList(danmakuBean);
+//            }
         }
 
         @Override

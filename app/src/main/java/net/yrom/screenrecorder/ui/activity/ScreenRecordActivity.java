@@ -20,13 +20,16 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.SurfaceTexture;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.os.Bundle;
+import android.os.Handler;
 import android.os.IBinder;
 import android.os.RemoteException;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
 import android.widget.EditText;
@@ -43,6 +46,8 @@ import net.yrom.screenrecorder.service.ScreenRecordListenerService;
 import net.yrom.screenrecorder.task.RtmpStreamingSender;
 import net.yrom.screenrecorder.task.ScreenRecorder;
 import net.yrom.screenrecorder.tools.LogTools;
+import net.yrom.screenrecorder.view.MyWindowManager;
+import net.yrom.screenrecorder.view.ScreenFloatingWindow;
 
 import java.util.ArrayList;
 import java.util.List;
@@ -62,6 +67,8 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
     private String rtmpAddr;
     private boolean isRecording;
     private RESCoreParameters coreParameters;
+
+    private Handler handler = new Handler();
 
     public static void launchActivity(Context ctx) {
         Intent it = new Intent(ctx, ScreenRecordActivity.class);
@@ -94,6 +101,18 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
 
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
+
+//        ScreenFloatingWindow smallWindow = MyWindowManager.getSmallWindow();
+//        TextureView preview = smallWindow.getPreviewView();
+//        SurfaceTexture texture = null;
+//        try {
+//            texture = preview.getSurfaceTexture();
+//        } catch (RuntimeException e) {
+//            String err = e.getMessage();
+//            int a = 0;
+//        }
+
+        // 录屏
         MediaProjection mediaProjection = mMediaProjectionManager.getMediaProjection(resultCode, data);
         if (mediaProjection == null) {
             Log.e("@@", "media projection is null");
@@ -101,7 +120,7 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
         }
         rtmpAddr = mRtmpAddET.getText().toString().trim();
         if (TextUtils.isEmpty(rtmpAddr)) {
-            Toast.makeText(this, "rtmp address cannot be null", Toast.LENGTH_SHORT).show();
+            Toast.makeText(ScreenRecordActivity.this, "rtmp address cannot be null", Toast.LENGTH_SHORT).show();
             return;
         }
         streamingSender = new RtmpStreamingSender();
@@ -129,7 +148,7 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
         executorService.execute(streamingSender);
 
         mButton.setText("Stop Recorder");
-        Toast.makeText(this, "Screen recorder is running...", Toast.LENGTH_SHORT).show();
+        Toast.makeText(ScreenRecordActivity.this, "Screen recorder is running...", Toast.LENGTH_SHORT).show();
         moveTaskToBack(true);
     }
 
