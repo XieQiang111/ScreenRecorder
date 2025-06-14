@@ -20,7 +20,17 @@ import android.content.ComponentName;
 import android.content.Context;
 import android.content.Intent;
 import android.content.ServiceConnection;
+import android.graphics.Bitmap;
+import android.graphics.Canvas;
+import android.graphics.Color;
+import android.graphics.Matrix;
+import android.graphics.Paint;
+import android.graphics.PixelFormat;
+import android.graphics.PorterDuff;
+import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
+import android.media.Image;
+import android.media.ImageReader;
 import android.media.projection.MediaProjection;
 import android.media.projection.MediaProjectionManager;
 import android.os.Bundle;
@@ -29,6 +39,7 @@ import android.os.IBinder;
 import android.os.RemoteException;
 import android.text.TextUtils;
 import android.util.Log;
+import android.view.Surface;
 import android.view.TextureView;
 import android.view.View;
 import android.widget.Button;
@@ -49,12 +60,15 @@ import net.yrom.screenrecorder.tools.LogTools;
 import net.yrom.screenrecorder.view.MyWindowManager;
 import net.yrom.screenrecorder.view.ScreenFloatingWindow;
 
+import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 public class ScreenRecordActivity extends Activity implements View.OnClickListener {
+    private static final String TAG = "ScreenRecordActivity";
+
     private static final int REQUEST_CODE = 1;
     private Button mButton;
     private EditText mRtmpAddET;
@@ -69,6 +83,10 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
     private RESCoreParameters coreParameters;
 
     private Handler handler = new Handler();
+    private ImageReader mImageReader;
+
+    //    Surface mSurface;
+    TextureView previewView;
 
     public static void launchActivity(Context ctx) {
         Intent it = new Intent(ctx, ScreenRecordActivity.class);
@@ -102,15 +120,8 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-//        ScreenFloatingWindow smallWindow = MyWindowManager.getSmallWindow();
-//        TextureView preview = smallWindow.getPreviewView();
-//        SurfaceTexture texture = null;
-//        try {
-//            texture = preview.getSurfaceTexture();
-//        } catch (RuntimeException e) {
-//            String err = e.getMessage();
-//            int a = 0;
-//        }
+        previewView = MyWindowManager.getSmallWindow().getPreviewView();
+//        mSurface = new Surface(previewView.getSurfaceTexture());
 
         // 录屏
         MediaProjection mediaProjection = mMediaProjectionManager.getMediaProjection(resultCode, data);
@@ -140,7 +151,11 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
             return;
         }
 
-        mVideoRecorder = new ScreenRecorder(collecter, RESFlvData.VIDEO_WIDTH, RESFlvData.VIDEO_HEIGHT, RESFlvData.VIDEO_BITRATE, 1, mediaProjection);
+        // 创建ImageReader用于获取帧
+        mImageReader = ImageReader.newInstance(RESFlvData.VIDEO_WIDTH, RESFlvData.VIDEO_HEIGHT, PixelFormat.RGBA_8888, 2);
+        mImageReader.setOnImageAvailableListener(imageListener, handler);
+
+        mVideoRecorder = new ScreenRecorder(collecter, RESFlvData.VIDEO_WIDTH, RESFlvData.VIDEO_HEIGHT, RESFlvData.VIDEO_BITRATE, 1, mediaProjection, mImageReader);
         mVideoRecorder.start();
         audioClient.start(collecter);
 
@@ -260,4 +275,56 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
         }
     }
 
+    private final ImageReader.OnImageAvailableListener imageListener =
+            new ImageReader.OnImageAvailableListener() {
+                @Override
+                public void onImageAvailable(ImageReader reader) {
+                    try (Image image = reader.acquireLatestImage()) {
+                        if (image == null) return;
+
+                        // 创建可修改的 Bitmap
+                        Bitmap bitmap = Bitmap.createBitmap(
+                                image.getWidth(),
+                                image.getHeight(),
+                                Bitmap.Config.ARGB_8888 // 直接使用 ARGB8888 配置
+                        );
+
+                        // 将图像数据复制到 Bitmap
+                        bitmap.copyPixelsFromBuffer(image.getPlanes()[0].getBuffer());
+                        
+
+                        Canvas canvas = previewView.lockCanvas();
+                        if (canvas != null) {
+                            // 清除画布
+                            canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
+
+                            // 计算缩放比例以保持宽高比
+                            float scale = Math.min(
+                                    (float) canvas.getWidth() / bitmap.getWidth(),
+                                    (float) canvas.getHeight() / bitmap.getHeight()
+                            );
+
+                            // 计算居中位置
+                            float scaledWidth = bitmap.getWidth() * scale;
+                            float scaledHeight = bitmap.getHeight() * scale;
+                            float left = (canvas.getWidth() - scaledWidth) / 2;
+                            float top = (canvas.getHeight() - scaledHeight) / 2;
+
+                            // 创建缩放矩阵
+                            Matrix matrix = new Matrix();
+                            matrix.setScale(scale, scale);
+                            matrix.postTranslate(left, top);
+
+                            // 绘制 Bitmap
+                            Paint paint = new Paint();
+                            paint.setFilterBitmap(true); // 启用抗锯齿
+                            canvas.drawBitmap(bitmap, matrix, paint);
+
+                            previewView.unlockCanvasAndPost(canvas);
+                        }
+                    } catch (Exception e) {
+                        Log.e(TAG, "Error processing image: " + e.getMessage());
+                    }
+                }
+            };
 }

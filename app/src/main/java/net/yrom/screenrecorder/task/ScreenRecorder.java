@@ -21,6 +21,7 @@ import android.graphics.BitmapFactory;
 import android.graphics.Canvas;
 import android.graphics.Color;
 import android.graphics.ImageFormat;
+import android.graphics.PixelFormat;
 import android.graphics.Rect;
 import android.graphics.SurfaceTexture;
 import android.hardware.display.DisplayManager;
@@ -75,9 +76,8 @@ public class ScreenRecorder extends Thread {
     private RESFlvDataCollecter mDataCollecter;
 
     private ImageReader mImageReader;
-    private ScreenRecordActivity mActivity;
 
-    public ScreenRecorder(RESFlvDataCollecter dataCollecter, int width, int height, int bitrate, int dpi, MediaProjection mp) {
+    public ScreenRecorder(RESFlvDataCollecter dataCollecter, int width, int height, int bitrate, int dpi, MediaProjection mp, ImageReader imageReader) {
         super(TAG);
         mWidth = width;
         mHeight = height;
@@ -86,10 +86,7 @@ public class ScreenRecorder extends Thread {
         mMediaProjection = mp;
         startTime = 0;
         mDataCollecter = dataCollecter;
-//        mActivity = activity;
-//        if (surfaceTexture != null) {
-//            mSurface = new Surface(surfaceTexture);
-//        }
+        mImageReader = imageReader;
     }
 
     /**
@@ -108,13 +105,10 @@ public class ScreenRecorder extends Thread {
                 throw new RuntimeException(e);
             }
 
-            // 创建ImageReader用于获取帧
-//            mImageReader = ImageReader.newInstance(mWidth, mHeight, ImageFormat.JPEG, 2);
-//            mImageReader.setOnImageAvailableListener(imageListener, new Handler());
 
             mVirtualDisplay = mMediaProjection.createVirtualDisplay(TAG + "-display",
                     mWidth, mHeight, mDpi, DisplayManager.VIRTUAL_DISPLAY_FLAG_PUBLIC,
-                    mSurface, null, null);
+                    mImageReader.getSurface(), null, null);
 
             Log.d(TAG, "created virtual display: " + mVirtualDisplay);
             recordVirtualDisplay();
@@ -247,66 +241,4 @@ public class ScreenRecorder extends Thread {
         resFlvData.videoFrameType = frameType;
         mDataCollecter.collect(resFlvData, FLV_RTMP_PACKET_TYPE_VIDEO);
     }
-
-
-//    private final ImageReader.OnImageAvailableListener imageListener =
-//            new ImageReader.OnImageAvailableListener() {
-//                @Override
-//                public void onImageAvailable(ImageReader reader) {
-////                    synchronized (mFrameLock) {
-//                    try (Image image = reader.acquireLatestImage()) {
-//                        if (image == null) return;
-//
-//                        // 获取原始帧数据
-//                        Image.Plane[] planes = image.getPlanes();
-//                        ByteBuffer buffer = planes[0].getBuffer();
-//                        byte[] bytes = new byte[buffer.remaining()];
-//                        buffer.get(bytes);
-//
-//                        // 解码为Bitmap并重采样
-//                        Bitmap originalBitmap = BitmapFactory.decodeByteArray(bytes, 0, bytes.length);
-//                        if (originalBitmap == null) {
-//                            Log.e(TAG, "Failed to decode byte array into bitmap.");
-//                            return;
-//                        }
-//
-//                        // 重采样到目标尺寸
-//                        Bitmap scaledBitmap = Bitmap.createScaledBitmap(
-//                                originalBitmap, 320, 180, true
-//                        );
-//                        originalBitmap.recycle();
-//
-//                        // 使用Canvas在Surface上绘制
-//                        Canvas canvas = mSurface.lockCanvas(null);
-//                        if (canvas != null) {
-//                            try {
-//                                // 清除画布
-//                                canvas.drawColor(Color.BLACK);
-//
-//                                // 计算居中位置
-//                                int canvasWidth = canvas.getWidth();
-//                                int canvasHeight = canvas.getHeight();
-//                                int left = (canvasWidth - 320) / 2;
-//                                int top = (canvasHeight - 180) / 2;
-//
-//                                // 绘制到Surface
-//                                canvas.drawBitmap(
-//                                        scaledBitmap,
-//                                        null,
-//                                        new Rect(left, top, left + 320, top + 180),
-//                                        null
-//                                );
-//                            } finally {
-//                                // 确保解锁画布
-//                                mSurface.unlockCanvasAndPost(canvas);
-//                            }
-//                        }
-//                        scaledBitmap.recycle();
-//                    } catch (Exception e) {
-//                        Log.e(TAG, "Error processing image: " + e.getMessage());
-//                    }
-//                }
-////                }
-//            };
-
 }
