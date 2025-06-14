@@ -149,7 +149,7 @@ public class ScreenRecorder extends Thread {
                 case MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:
                     LogTools.d("VideoSenderThread,MediaCodec.INFO_OUTPUT_FORMAT_CHANGED:" +
                             mEncoder.getOutputFormat().toString());
-                    sendAVCDecoderConfigurationRecord(0, mEncoder.getOutputFormat());
+//                    sendAVCDecoderConfigurationRecord(0, mEncoder.getOutputFormat());
                     break;
                 default:
                     LogTools.d("VideoSenderThread,MediaCode,eobIndex=" + eobIndex);
@@ -161,11 +161,11 @@ public class ScreenRecorder extends Thread {
                      * so we ignore MediaCodec.BUFFER_FLAG_CODEC_CONFIG
                      */
                     if (mBufferInfo.flags != MediaCodec.BUFFER_FLAG_CODEC_CONFIG && mBufferInfo.size != 0) {
-                        ByteBuffer realData = mEncoder.getOutputBuffers()[eobIndex];
+//                        ByteBuffer realData = mEncoder.getOutputBuffers()[eobIndex];
 
-                        realData.position(mBufferInfo.offset + 4);
-                        realData.limit(mBufferInfo.offset + mBufferInfo.size);
-                        sendRealData((mBufferInfo.presentationTimeUs / 1000) - startTime, realData);
+//                        realData.position(mBufferInfo.offset + 4);
+//                        realData.limit(mBufferInfo.offset + mBufferInfo.size);
+//                        sendRealData((mBufferInfo.presentationTimeUs / 1000) - startTime, realData);
                     }
                     mEncoder.releaseOutputBuffer(eobIndex, false);
                     break;

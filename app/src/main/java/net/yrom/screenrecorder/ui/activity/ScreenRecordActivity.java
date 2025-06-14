@@ -83,10 +83,9 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
     private RESCoreParameters coreParameters;
 
     private Handler handler = new Handler();
-    private ImageReader mImageReader;
 
-    //    Surface mSurface;
-    TextureView previewView;
+    private ImageReader mImageReader;
+    TextureView mPreviewView;
 
     public static void launchActivity(Context ctx) {
         Intent it = new Intent(ctx, ScreenRecordActivity.class);
@@ -120,9 +119,7 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
     @Override
     protected void onActivityResult(int requestCode, int resultCode, Intent data) {
 
-        previewView = MyWindowManager.getSmallWindow().getPreviewView();
-//        mSurface = new Surface(previewView.getSurfaceTexture());
-
+        mPreviewView = MyWindowManager.getSmallWindow().getPreviewView();
         // 录屏
         MediaProjection mediaProjection = mMediaProjectionManager.getMediaProjection(resultCode, data);
         if (mediaProjection == null) {
@@ -151,11 +148,14 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
             return;
         }
 
+        int width = RESFlvData.VIDEO_HEIGHT;
+        int height = RESFlvData.VIDEO_WIDTH;
+
         // 创建ImageReader用于获取帧
-        mImageReader = ImageReader.newInstance(RESFlvData.VIDEO_WIDTH, RESFlvData.VIDEO_HEIGHT, PixelFormat.RGBA_8888, 2);
+        mImageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2);
         mImageReader.setOnImageAvailableListener(imageListener, handler);
 
-        mVideoRecorder = new ScreenRecorder(collecter, RESFlvData.VIDEO_WIDTH, RESFlvData.VIDEO_HEIGHT, RESFlvData.VIDEO_BITRATE, 1, mediaProjection, mImageReader);
+        mVideoRecorder = new ScreenRecorder(collecter, width, height, RESFlvData.VIDEO_BITRATE, 1, mediaProjection, mImageReader);
         mVideoRecorder.start();
         audioClient.start(collecter);
 
@@ -282,6 +282,18 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
                     try (Image image = reader.acquireLatestImage()) {
                         if (image == null) return;
 
+
+                        Image.Plane plane = image.getPlanes()[0];
+                        ByteBuffer buffer = plane.getBuffer();
+                        int width = image.getWidth();
+                        int height = image.getHeight();
+                        int pixelStride = plane.getPixelStride(); // 通常为4（RGBA）
+                        int rowStride = plane.getRowStride();     // 关键：实际行字节长度
+
+                        // 计算有效行长度（无填充）
+                        int effectiveRowLength = width * pixelStride;
+
+
                         // 创建可修改的 Bitmap
                         Bitmap bitmap = Bitmap.createBitmap(
                                 image.getWidth(),
@@ -289,24 +301,62 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
                                 Bitmap.Config.ARGB_8888 // 直接使用 ARGB8888 配置
                         );
 
-                        // 将图像数据复制到 Bitmap
-                        bitmap.copyPixelsFromBuffer(image.getPlanes()[0].getBuffer());
-                        
 
-                        Canvas canvas = previewView.lockCanvas();
+                        // 情况1：无填充，直接复制
+                        if (rowStride == effectiveRowLength) {
+                            buffer.rewind();
+                            bitmap.copyPixelsFromBuffer(buffer);
+                        } else {
+                            // 情况2：有填充，需逐行处理
+                            ByteBuffer tempBuffer = ByteBuffer.allocateDirect(effectiveRowLength * height);
+
+                            for (int y = 0; y < height; y++) {
+                                int srcPos = y * rowStride;
+                                int destPos = y * effectiveRowLength;
+
+                                // 设置缓冲区位置
+                                buffer.position(srcPos);
+
+                                // 复制一行有效数据
+                                byte[] row = new byte[effectiveRowLength];
+                                buffer.get(row, 0, effectiveRowLength);
+                                tempBuffer.put(row);
+                            }
+
+                            tempBuffer.rewind();
+                            bitmap.copyPixelsFromBuffer(tempBuffer);
+                        }
+
+                        // 创建一个可修改的 Bitmap
+                        Bitmap sbsBitmap = Bitmap.createBitmap(
+                                bitmap.getWidth() * 2,
+                                bitmap.getHeight(),
+                                Bitmap.Config.ARGB_8888
+                        );
+
+                        {
+                            Canvas canvas_ = new Canvas(sbsBitmap);
+                            // 绘制左边部分
+                            canvas_.drawBitmap(bitmap, 0, 0, null);
+                            // 绘制右边部分（在左侧图的右边）
+                            canvas_.drawBitmap(bitmap, bitmap.getWidth(), 0, null);
+                        }
+
+
+                        Canvas canvas = mPreviewView.lockCanvas();
                         if (canvas != null) {
                             // 清除画布
                             canvas.drawColor(Color.TRANSPARENT, PorterDuff.Mode.CLEAR);
 
                             // 计算缩放比例以保持宽高比
                             float scale = Math.min(
-                                    (float) canvas.getWidth() / bitmap.getWidth(),
-                                    (float) canvas.getHeight() / bitmap.getHeight()
+                                    (float) canvas.getWidth() / sbsBitmap.getWidth(),
+                                    (float) canvas.getHeight() / sbsBitmap.getHeight()
                             );
 
                             // 计算居中位置
-                            float scaledWidth = bitmap.getWidth() * scale;
-                            float scaledHeight = bitmap.getHeight() * scale;
+                            float scaledWidth = sbsBitmap.getWidth() * scale;
+                            float scaledHeight = sbsBitmap.getHeight() * scale;
                             float left = (canvas.getWidth() - scaledWidth) / 2;
                             float top = (canvas.getHeight() - scaledHeight) / 2;
 
@@ -318,9 +368,9 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
                             // 绘制 Bitmap
                             Paint paint = new Paint();
                             paint.setFilterBitmap(true); // 启用抗锯齿
-                            canvas.drawBitmap(bitmap, matrix, paint);
+                            canvas.drawBitmap(sbsBitmap, matrix, paint);
 
-                            previewView.unlockCanvasAndPost(canvas);
+                            mPreviewView.unlockCanvasAndPost(canvas);
                         }
                     } catch (Exception e) {
                         Log.e(TAG, "Error processing image: " + e.getMessage());

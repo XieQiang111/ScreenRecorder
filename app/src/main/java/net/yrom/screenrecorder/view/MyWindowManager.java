@@ -33,6 +33,17 @@ public class MyWindowManager {
      */
     private static WindowManager mWindowManager;
 
+    private static int screenWidth, screenHeight;
+
+    public static int getScreenWidth() {
+        return screenWidth;
+    }
+
+    public static int getScreenHeight() {
+        return screenHeight;
+    }
+
+
     private static ScreenFloatingWindow.OnFloatingWindowItemClickListener listener = new ScreenFloatingWindow.OnFloatingWindowItemClickListener() {
         @Override
         public void onItemClick(View view) {
@@ -56,8 +67,8 @@ public class MyWindowManager {
      */
     public static void createSmallWindow(Context context) {
         WindowManager windowManager = getWindowManager(context);
-        int screenWidth = windowManager.getDefaultDisplay().getWidth();
-        int screenHeight = windowManager.getDefaultDisplay().getHeight();
+        screenWidth = windowManager.getDefaultDisplay().getWidth();
+        screenHeight = windowManager.getDefaultDisplay().getHeight();
         if (smallWindow == null) {
             smallWindow = new ScreenFloatingWindow(context);
             if (smallWindowParams == null) {
