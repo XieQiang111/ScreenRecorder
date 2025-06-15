@@ -150,38 +150,6 @@ public class ScreenFloatingWindow extends FrameLayout implements IScreenRecordFl
         micView.setOnClickListener(this);
         changeButtonView.setOnClickListener(this);
         floatingSwichView.setOnClickListener(this);
-
-        previewView.setSurfaceTextureListener(new TextureView.SurfaceTextureListener() {
-            @Override
-            public void onSurfaceTextureAvailable(SurfaceTexture surface, int width, int height) {
-                // ✅ 此时 SurfaceTexture 已就绪，可安全使用
-
-                SurfaceTexture texture = previewView.getSurfaceTexture();
-
-                if(surface == texture)
-                {
-                    int a = 0;
-                }
-            }
-
-            @Override
-            public void onSurfaceTextureSizeChanged(SurfaceTexture surface, int width, int height) {
-
-            }
-
-            @Override
-            public boolean onSurfaceTextureDestroyed(SurfaceTexture surface) {
-                // ✅ 释放资源（如 MediaPlayer、Camera）
-                return true; // 返回 true 让系统自动释放 SurfaceTexture
-            }
-
-            @Override
-            public void onSurfaceTextureUpdated(SurfaceTexture surface) {
-
-            }
-
-            // ... 其他回调略
-        });
     }
 
     @Override
@@ -259,8 +227,16 @@ public class ScreenFloatingWindow extends FrameLayout implements IScreenRecordFl
             danmakuView.setImageResource(visible ? R.drawable.ic_float_danmaku_open : R.drawable.ic_float_danmaku_close);
             if (visible) {
                 floatingDanmakuLL.setVisibility(VISIBLE);
+
+                mParams.width = 1080;
+                mParams.height = 2250;
+                windowManager.updateViewLayout(this, mParams);
             } else {
                 floatingDanmakuLL.setVisibility(GONE);
+
+                mParams.width = 380;
+                mParams.height = 180;
+                windowManager.updateViewLayout(this, mParams);
             }
         }
     }

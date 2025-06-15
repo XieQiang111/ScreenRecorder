@@ -148,8 +148,14 @@ public class ScreenRecordActivity extends Activity implements View.OnClickListen
             return;
         }
 
-        int width = RESFlvData.VIDEO_HEIGHT;
-        int height = RESFlvData.VIDEO_WIDTH;
+//        int width = RESFlvData.VIDEO_HEIGHT;
+//        int height = RESFlvData.VIDEO_WIDTH;
+
+//        int width = MyWindowManager.getScreenWidth();
+//        int height = MyWindowManager.getScreenHeight();
+
+        int width = 1080;
+        int height = 2250;
 
         // 创建ImageReader用于获取帧
         mImageReader = ImageReader.newInstance(width, height, PixelFormat.RGBA_8888, 2);

@@ -83,8 +83,10 @@ public class MyWindowManager {
                 smallWindowParams.format = PixelFormat.RGBA_8888;
                 smallWindowParams.flags = LayoutParams.FLAG_NOT_TOUCH_MODAL | LayoutParams.FLAG_NOT_FOCUSABLE;
                 smallWindowParams.gravity = Gravity.LEFT | Gravity.TOP;
-                smallWindowParams.width = ScreenFloatingWindow.viewWidth;
-                smallWindowParams.height = ScreenFloatingWindow.viewHeight;
+//                smallWindowParams.width = ScreenFloatingWindow.viewWidth;
+//                smallWindowParams.height = ScreenFloatingWindow.viewHeight;
+                smallWindowParams.width = screenWidth;
+                smallWindowParams.height = screenHeight;
                 smallWindowParams.x = screenWidth;
                 smallWindowParams.y = screenHeight / 2;
             }
